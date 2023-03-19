@@ -1,23 +1,145 @@
 import http from 'http';
 import express from 'express';
-import { WebSocketServer } from 'ws';
+import { WSServer } from './ws.js';
+import yup from 'yup';
+import prisma from './prisma.js';
+import bcrypt from 'bcrypt';
+import { requireSchema } from './lib/middleware.js';
+import { generateToken } from './lib/utils.js';
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
 
-wss.on('connection', (ws) => {
-    ws.on('message', (message) => {
-        console.log('received: %s', message);
-    });
+// Attach the WebSocket server to the HTTP server
+new WSServer(server);
 
-    ws.on('close', () => {
-        console.log('disconnected');
-    });
+// Setup JSON body parsing
+app.use(express.json());
+app.use((req, res, next) => {
+    if (req.method === 'POST' && !req.is('application/json')) {
+        res.status(400)
+            .header('Content-Type', 'text/plain')
+            .send('Only application/json is supported');
+        return;
+    }
 
-    ws.send('something');
+    next();
 });
 
-server.listen(process.env.PORT || 8080, () => {
+const registerSchema = yup.object().shape({
+    username: yup.string().min(3).max(20).required(),
+    password: yup.string().min(8).max(100).required(),
+    publicKey: yup.string().max(4096).required(),
+    encryptedKey: yup.string(4096).required(),
+    name: yup.string().min(1).max(30).required(),
+    email: yup.string().email().required(),
+});
+
+app.post('/register', requireSchema(registerSchema), async (req, res) => {
+    // Hash the password
+    const data = res.locals.body;
+    data.password = await bcrypt.hash(data.password, 10);
+
+    let user;
+
+    try {
+        // Try to create user
+        user = await prisma.user.create({ data });
+    } catch (err) {
+        if (err.code === 'P2002') {
+            // Usernames must be unique
+            res.status(400).send({
+                status: false,
+                message: "Username or email is already taken"
+            });
+            return;
+        }
+
+        console.error(err);
+        res.status(500).send({
+            status: false,
+            message: "An unknown error occurred"
+        });
+        return;
+    }
+
+    // Create a session for the user
+    const session = await prisma.session.create({
+        data: {
+            user: {
+                connect: {
+                    id: user.id
+                }
+            },
+            expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days
+            token: generateToken()
+        }
+    });
+
+    // Success!
+    res.send({
+        status: true,
+        message: "Successfully registered",
+        token: session.token
+    });
+});
+
+const loginSchema = yup.object().shape({
+    username: yup.string().min(3).max(20).required(),
+    password: yup.string().min(8).max(100).required(),
+});
+
+app.post('/login', requireSchema(loginSchema), async (req, res) => {
+    const data = res.locals.body;
+
+    // Find the user
+    const user = await prisma.user.findUnique({
+        where: {
+            username: data.username
+        }
+    });
+
+    // Check if the user exists
+    if (!user) {
+        res.status(400).send({
+            status: false,
+            message: "Invalid username or password"
+        });
+        return;
+    }
+
+    // Check if the password is correct
+    const valid = await bcrypt.compare(data.password, user.password);
+
+    if (!valid) {
+        res.status(400).send({
+            status: false,
+            message: "Invalid username or password"
+        });
+        return;
+    }
+
+    // Create a session for the user
+    const session = await prisma.session.create({
+        data: {
+            user: {
+                connect: {
+                    id: user.id
+                }
+            },
+            expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days
+            token: generateToken()
+        }
+    });
+
+    // Success!
+    res.send({
+        status: true,
+        message: "Successfully logged in",
+        token: session.token
+    });
+});
+
+server.listen(8080, () => {
     console.log('Listening on %d', server.address().port);
 });
