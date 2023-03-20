@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-    <title>Chats | GigaChat</title>
+    <title>Login | GigaChat</title>
 </svelte:head>
 
 <button on:click={notify}>Test notification</button>
