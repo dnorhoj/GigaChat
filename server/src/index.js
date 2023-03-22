@@ -86,7 +86,7 @@ app.post('/register', requireSchema(registerSchema), async (req, res) => {
 
 const loginSchema = yup.object().shape({
     username: yup.string().min(3).max(20).required(),
-    password: yup.string().min(8).max(100).required(),
+    email: yup.string().email().required(),
 });
 
 app.post('/login', requireSchema(loginSchema), async (req, res) => {

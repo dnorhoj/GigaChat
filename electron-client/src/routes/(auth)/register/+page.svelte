@@ -1,8 +1,24 @@
 <script lang="ts">
-    let name: string, username: string, email: string, password: string, cPassword: string;
+    import { api } from "$lib/api";
+
+    let name: string,
+        username: string,
+        email: string,
+        password: string,
+        cPassword: string;
 
     const submit = async () => {
-        
+        const a = 1;
+
+        api("/register", {
+            method: "POST",
+            body: JSON.stringify({
+                name,
+                username,
+                email,
+                password,
+            }),
+        });
     };
 </script>
 

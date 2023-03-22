@@ -42,7 +42,7 @@
         </div>
         <div class="mt-6 flex justify-between">
             <button class="btn btn-primary" type="submit">Login</button>
-            <a class="btn btn-outline" href="/login">Don't have a user?</a>
+            <a class="btn btn-outline" href="/register">Don't have a user?</a>
         </div>
     </form>
 </div>

@@ -1,5 +1,6 @@
 import { get } from "svelte/store";
 import { user } from "$lib/stores";
+import { PUBLIC_API_URL } from "$env/static/public";
 
 type APIParams = {
     method?: "GET" | "POST";
@@ -22,8 +23,9 @@ export const api = async (
     // Set method to POST if body is set
     if (!method && body) method = "POST";
 
-    // Set url if url is relative
-    url = `${window.location.origin}/api${url}`;
+    // Set url
+    url = url.startsWith("/") ? url : "/" + url;
+    url = PUBLIC_API_URL + url;
 
     // Add session token to headers if logged in
     const userValue = get(user);
