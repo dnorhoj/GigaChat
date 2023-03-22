@@ -1,7 +1,7 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import { api } from "$lib/api";
-    import { SecurityKey, RSAKey } from "$lib/crypto";
+    import { SecurityKey, RSAKey, b64 } from "$lib/crypto";
     import Swal from "sweetalert2";
     import * as yup from "yup";
 
@@ -127,7 +127,7 @@
                     },
                 })
                     .then((data) => {
-                        securityKey.save();
+                        localStorage.setItem("privatekey", b64(privateKey))
                         localStorage.setItem("token", data.token);
                         Swal.close();
                         goto("/app");

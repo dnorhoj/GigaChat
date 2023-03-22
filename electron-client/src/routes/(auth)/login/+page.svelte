@@ -1,17 +1,76 @@
 <script lang="ts">
+    import { goto } from "$app/navigation";
     import { api } from "$lib/api";
+    import { b64, SecurityKey } from "$lib/crypto";
+    import Swal from "sweetalert2";
+    import * as yup from "yup";
 
     let email: string, password: string;
 
+    const loginSchema = yup.object().shape({
+        email: yup.string().email().required("Email is required"),
+        password: yup.string().min(8).max(100).required(),
+    });
+
     const submit = async () => {
-        const data = await api("/login", {
+        try {
+            await loginSchema.validate({
+                email,
+                password,
+            });
+        } catch (error: any) {
+            Swal.fire({
+                title: "Error",
+                text: error.message,
+                icon: "error",
+            });
+            return;
+        }
+
+        api("/login", {
             body: {
                 email,
-                password
-            }
+                password,
+            },
         })
+            .then((data) => {
+                // Request security key
+                Swal.fire({
+                    title: "Restore messages",
+                    text: "Enter your security key to restore your messages",
+                    input: "text",
+                }).then(async (keyPrompt) => {
+                    let privateKey: string;
+                    try {
+                        const key = SecurityKey.import(keyPrompt.value);
+                        const aesKey = await key.deriveKey();
+                        privateKey = b64(await aesKey.decrypt(
+                            data.encryptedKey
+                        ));
+                    } catch (error: any) {
+                        console.error(error);
+                        Swal.fire({
+                            title: "Error",
+                            text: "Wrong security key",
+                            icon: "error",
+                        });
+                        return;
+                    }
 
-        console.log(data);
+                    // Save data
+                    localStorage.setItem("privateKey", privateKey);
+                    localStorage.setItem("token", data.token);
+
+                    goto("/app");
+                });
+            })
+            .catch((error) => {
+                Swal.fire({
+                    title: "Error",
+                    text: error.message,
+                    icon: "error",
+                });
+            });
     };
 </script>
 

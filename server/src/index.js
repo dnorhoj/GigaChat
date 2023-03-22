@@ -96,8 +96,8 @@ app.post('/register', requireSchema(registerSchema), async (req, res) => {
 });
 
 const loginSchema = yup.object().shape({
-    username: yup.string().min(3).max(20).required(),
     email: yup.string().email().required(),
+    password: yup.string().max(100).required(),
 });
 
 app.post('/login', requireSchema(loginSchema), async (req, res) => {
@@ -106,7 +106,7 @@ app.post('/login', requireSchema(loginSchema), async (req, res) => {
     // Find the user
     const user = await prisma.user.findUnique({
         where: {
-            username: data.username
+            email: data.email
         }
     });
 
@@ -147,7 +147,10 @@ app.post('/login', requireSchema(loginSchema), async (req, res) => {
     res.send({
         status: true,
         message: "Successfully logged in",
-        token: session.token
+        data: {
+            token: session.token,
+            encryptedKey: user.encryptedKey
+        }
     });
 });
 

@@ -10,11 +10,11 @@ const unhex = (data: string) => {
     );
 };
 
-const b64 = (data: ArrayBuffer | Uint8Array) => {
+export const b64 = (data: ArrayBuffer | Uint8Array) => {
     return window.btoa(String.fromCharCode(...new Uint8Array(data)));
 };
 
-const ub64 = (data: string) => {
+export const ub64 = (data: string) => {
     return new Uint8Array(
         window.atob(data).split("").map((c) => c.charCodeAt(0))
     );
@@ -33,18 +33,6 @@ export class SecurityKey {
 
     static import(key: string) {
         return new SecurityKey(unhex(key));
-    }
-
-    save() {
-        localStorage.setItem("securityKey", this.export());
-    }
-
-    static load() {
-        const key = localStorage.getItem("securityKey");
-
-        if (!key) return null;
-
-        return SecurityKey.import(key);
     }
 
     async deriveKey() {
