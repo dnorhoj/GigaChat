@@ -1,5 +1,9 @@
 <script lang="ts">
+    import { goto } from "$app/navigation";
     import { api } from "$lib/api";
+    import { SecurityKey, RSAKey } from "$lib/crypto";
+    import Swal from "sweetalert2";
+    import * as yup from "yup";
 
     let name: string,
         username: string,
@@ -7,17 +11,136 @@
         password: string,
         cPassword: string;
 
-    const submit = async () => {
-        const a = 1;
+    const registerSchema = yup.object().shape({
+        username: yup.string().min(3).max(20).required("Username is required"),
+        password: yup.string().min(8).max(100).required(),
+        name: yup.string().min(1).max(32).required(),
+        email: yup.string().email().required(),
+    });
 
-        api("/register", {
-            method: "POST",
-            body: JSON.stringify({
+    const submit = async () => {
+        try {
+            if (password !== cPassword) {
+                throw new Error("Passwords do not match");
+            }
+
+            await registerSchema.validate({
                 name,
                 username,
                 email,
                 password,
-            }),
+            });
+        } catch (error: any) {
+            Swal.fire({
+                title: "Error",
+                text: error.message,
+                icon: "error",
+            });
+            return;
+        }
+
+        const securityKey = new SecurityKey();
+        const aesKey = await securityKey.deriveKey();
+        const exported = securityKey.export();
+
+        const securityConfirm = await Swal.fire({
+            title: "Your security key",
+            text: "",
+            html: `
+                <div class="text-base">
+                    <p>
+                        Your security key is used to encrypt your messages.
+                    </p>
+                    <p>
+                        If you lose it, you will not be able to decrypt your messages.
+                    </p>
+                    <p>
+                        Please save it somewhere safe.
+                    </p>
+                </div>
+                <div class="mt-4">
+                    <div class="text-sm text-primary">
+                        Your security key
+                    </div>
+                    <code class="text-sm block">
+                        ${exported}
+                    </code>
+                    <button onclick="navigator.clipboard.writeText('${exported}')" class="btn btn-primary btn-sm mt-1">
+                        Copy to clipboard
+                    </button>
+                </div>
+            `,
+            icon: "info",
+            confirmButtonText: "I have saved it!",
+            showCancelButton: true,
+            cancelButtonColor: "#d33",
+        });
+
+        if (!securityConfirm.isConfirmed) {
+            return;
+        }
+
+        const confirm = await Swal.fire({
+            title: "Check security key",
+            text: "Please enter your security key to confirm you have saved it.",
+            icon: "info",
+            confirmButtonText: "Confirm",
+            showCancelButton: true,
+            cancelButtonColor: "#d33",
+            input: "text",
+            preConfirm: (key) => {
+                if (key !== exported) {
+                    Swal.showValidationMessage("Security key does not match");
+                }
+            },
+        });
+
+        if (!confirm.isConfirmed) {
+            return;
+        }
+
+        const rsaKey = await RSAKey.generate();
+        const publicKey = await rsaKey.exportPub();
+        const privateKey = await rsaKey.exportPriv();
+
+        const encryptedPrivateKey = await aesKey.encrypt(
+            new Uint8Array(privateKey)
+        );
+
+        await Swal.fire({
+            title: "Registering...",
+            text: "Please wait...",
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            allowEnterKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+                api("/register", {
+                    body: {
+                        name,
+                        username,
+                        email,
+                        password,
+                        publicKey,
+                        encryptedKey: encryptedPrivateKey,
+                    },
+                })
+                    .then((data) => {
+                        securityKey.save();
+                        localStorage.setItem("token", data.token);
+                        Swal.close();
+                        goto("/app");
+                    })
+                    .catch((error) => {
+                        console.error(error);
+                        Swal.fire({
+                            title: "Error",
+                            text: error.message,
+                            icon: "error",
+                        });
+                    });
+            },
         });
     };
 </script>
@@ -40,6 +163,8 @@
                 bind:value={name}
                 type="text"
                 placeholder="Name"
+                min="1"
+                max="32"
             />
             <label for="name" class="label">This is your display name</label>
         </div>
@@ -52,8 +177,10 @@
                     bind:value={username}
                     type="text"
                     placeholder="Username"
+                    min="3"
+                    max="20"
                 />
-                <label for="name" class="label">
+                <label for="username" class="label">
                     This is how other people find you
                 </label>
             </div>
@@ -78,6 +205,8 @@
                     bind:value={password}
                     type="password"
                     placeholder="Password"
+                    min="8"
+                    max="100"
                 />
                 <label for="name" class="label">Your password</label>
             </div>
@@ -89,6 +218,8 @@
                     bind:value={cPassword}
                     type="password"
                     placeholder="Password"
+                    min="8"
+                    max="100"
                 />
                 <label for="name" class="label">Confirm your password</label>
             </div>

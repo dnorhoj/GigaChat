@@ -32,6 +32,7 @@
   "dependencies": {
     "@sveltejs/adapter-node": "^1.2.3",
     "daisyui": "^2.51.4",
-    "sweetalert2": "^11.7.3"
+    "sweetalert2": "^11.7.3",
+    "yup": "^1.0.2"
   }
 }

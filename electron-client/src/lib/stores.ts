@@ -6,6 +6,7 @@ type UserSession = {
     name: string;
     email: string;
     token: string;
+    rsaKey: CryptoKey;
 }
 
 export const user: Writable<UserSession | null> = writable(null);

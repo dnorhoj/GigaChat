@@ -50,9 +50,9 @@ export const api = async (
         throw { message: "Something went wrong!", status: res.status };
     }
 
-    if (!json.succeeded) {
-        console.error("API error", json.error);
-        throw { message: json.error, status: res.status };
+    if (!json.status) {
+        console.error("API error", json.message);
+        throw { message: json.message, status: res.status };
     }
 
     return json.data;

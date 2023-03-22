@@ -1,7 +1,7 @@
 import http from 'http';
 import express from 'express';
 import { WSServer } from './ws.js';
-import yup from 'yup';
+import * as yup from 'yup';
 import prisma from './prisma.js';
 import bcrypt from 'bcrypt';
 import { requireSchema } from './lib/middleware.js';
@@ -9,6 +9,16 @@ import { generateToken } from './lib/utils.js';
 
 const app = express();
 const server = http.createServer(app);
+
+const clientUrl = 'http://localhost:5173'
+
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Origin', clientUrl);
+    next();
+});
 
 // Attach the WebSocket server to the HTTP server
 new WSServer(server);
@@ -29,9 +39,9 @@ app.use((req, res, next) => {
 const registerSchema = yup.object().shape({
     username: yup.string().min(3).max(20).required(),
     password: yup.string().min(8).max(100).required(),
-    publicKey: yup.string().max(4096).required(),
-    encryptedKey: yup.string(4096).required(),
-    name: yup.string().min(1).max(30).required(),
+    publicKey: yup.string().required(),
+    encryptedKey: yup.string().required(),
+    name: yup.string().min(1).max(32).required(),
     email: yup.string().email().required(),
 });
 
@@ -47,7 +57,6 @@ app.post('/register', requireSchema(registerSchema), async (req, res) => {
         user = await prisma.user.create({ data });
     } catch (err) {
         if (err.code === 'P2002') {
-            // Usernames must be unique
             res.status(400).send({
                 status: false,
                 message: "Username or email is already taken"
@@ -80,7 +89,9 @@ app.post('/register', requireSchema(registerSchema), async (req, res) => {
     res.send({
         status: true,
         message: "Successfully registered",
-        token: session.token
+        data: {
+            token: session.token
+        }
     });
 });
 
