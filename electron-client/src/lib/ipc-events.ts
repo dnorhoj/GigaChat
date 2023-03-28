@@ -1,15 +1,22 @@
 import type { IpcRenderer } from "electron";
-import { browser } from "$app/environment";
 
-// Only import the ipcRenderer if we are in the browser
-const ipcRenderer: IpcRenderer = window.require('electron').ipcRenderer;
+const inElectron = !!window.require;
+const electron = inElectron ? window.require('electron') : { ipcRenderer: undefined };
+
+const ipcRenderer: IpcRenderer | undefined = electron.ipcRenderer;
 
 export enum IPCEvent {
     Notification = 'app:notification',
 }
 
+const sendIPC = (event: IPCEvent, data: any) => {
+    if (!inElectron) return;
+
+    ipcRenderer!.send(event, data);
+}
+
 export const sendNotification = (title: string, body: string) => {
-    ipcRenderer!.send(IPCEvent.Notification, {
+    sendIPC(IPCEvent.Notification, {
         title,
         body
     });

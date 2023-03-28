@@ -69,7 +69,7 @@ export class WSServer {
         // Hook into the HTTP server
         // Here we can add an authentication check before upgrading the connection
         this.httpServer.on('upgrade', async (req, socket, head) => {
-            const token = req.headers['x-token'];
+            const token = req.url.split('?token=')[1];
 
             if (!token) {
                 socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
