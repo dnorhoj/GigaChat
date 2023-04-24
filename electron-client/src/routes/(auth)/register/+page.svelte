@@ -39,6 +39,23 @@
             return;
         }
 
+        // Send register start request
+        try {
+            await api("/register/start", {
+                body: {
+                    username,
+                    email,
+                },
+            });
+        } catch (error: any) {
+            Swal.fire({
+                title: "Error",
+                text: error.message,
+                icon: "error",
+            });
+            return;
+        }
+
         const securityKey = new SecurityKey();
         const aesKey = await securityKey.deriveKey();
         const exported = securityKey.export();

@@ -2,8 +2,8 @@ import type http from 'http';
 import type { User } from '@prisma/client';
 import type { WebSocket, RawData } from 'ws';
 import { WebSocketServer } from 'ws';
-import prisma from './prisma';
-import wsEvents from './lib/ws-events';
+import prisma from '../prisma';
+import wsEvents from '../lib/ws-events';
 import { object, string } from 'yup';
 
 const messageSchema = object().shape({
