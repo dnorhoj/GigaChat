@@ -1,11 +1,11 @@
 import http from 'http';
 import express from 'express';
-import { WSServer } from './ws.js';
+import { WSServer } from './ws';
 import * as yup from 'yup';
-import prisma from './prisma.js';
+import prisma from './prisma';
 import bcrypt from 'bcrypt';
-import { requireSchema } from './lib/middleware.js';
-import { generateToken } from './lib/utils.js';
+import { requireSchema } from './lib/middleware';
+import { generateToken } from './lib/utils';
 
 const app = express();
 const server = http.createServer(app);
@@ -56,6 +56,7 @@ app.post('/register', requireSchema(registerSchema), async (req, res) => {
         // Try to create user
         user = await prisma.user.create({ data });
     } catch (err) {
+        // @ts-ignore
         if (err.code === 'P2002') {
             res.status(400).send({
                 status: false,
@@ -154,6 +155,8 @@ app.post('/login', requireSchema(loginSchema), async (req, res) => {
     });
 });
 
-server.listen(8080, () => {
-    console.log('Listening on %d', server.address().port);
+const port = 8080;
+
+server.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
 });

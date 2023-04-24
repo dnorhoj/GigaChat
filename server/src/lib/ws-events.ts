@@ -4,4 +4,4 @@ import yup from 'yup';
 export default {
     ping: null,
     me: null
-}
+} as Record<string, yup.ObjectSchema<any> | null>;

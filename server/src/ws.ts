@@ -1,20 +1,27 @@
+import type http from 'http';
+import type { User } from '@prisma/client';
+import type { WebSocket, RawData } from 'ws';
 import { WebSocketServer } from 'ws';
-import prisma from './prisma.js';
-import wsEvents from './lib/ws-events.js';
+import prisma from './prisma';
+import wsEvents from './lib/ws-events';
+import { object, string } from 'yup';
 
-const parseMessage = (message) => {
+const messageSchema = object().shape({
+    type: string().oneOf(Object.keys(wsEvents)).required(),
+    data: object().required()
+});
+
+const parseMessage = async (message: RawData) => {
     try {
-        const msg = JSON.parse(message);
+        const msg = JSON.parse(message.toString());
 
-        const { type, data } = msg;
-
-        return { type, data };
+        return await messageSchema.validate(msg);
     } catch (err) {
         return null;
     }
 }
 
-const auth = async (token) => {
+const auth = async (token: string) => {
     const session = await prisma.session.findUnique({
         where: {
             token
@@ -40,27 +47,34 @@ const auth = async (token) => {
 
 // WebSocket connection class that stores connection data
 class WSConnection {
-    constructor(ws, user) {
+    ws: WebSocket;
+    user: User;
+
+    constructor(ws: WebSocket, user: User) {
         this.ws = ws;
         this.user = user;
     }
 
-    send(type, data) {
+    send(type: string, data?: object) {
         this.ws.send(JSON.stringify({ type, data }));
     }
 
-    error(message) {
+    error(message: string) {
         this.send('error', { message });
     }
 }
 
 // WebSocket server class that handles all the connections
 export class WSServer {
-    clients = new Set();
+    wss: WebSocketServer;
+    httpServer: http.Server;
+    clients: Set<WSConnection>
 
-    constructor(server) {
+
+    constructor(server: http.Server) {
         this.wss = new WebSocketServer({ noServer: true });
         this.httpServer = server;
+        this.clients = new Set();
 
         this.setup();
     }
@@ -69,7 +83,7 @@ export class WSServer {
         // Hook into the HTTP server
         // Here we can add an authentication check before upgrading the connection
         this.httpServer.on('upgrade', async (req, socket, head) => {
-            const token = req.url.split('?token=')[1];
+            const token = req.url?.split('?token=')[1];
 
             if (!token) {
                 socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
@@ -85,6 +99,7 @@ export class WSServer {
                 return;
             }
 
+            // @ts-ignore
             req.user = user;
 
             this.wss.handleUpgrade(req, socket, head, (ws) => {
@@ -95,11 +110,12 @@ export class WSServer {
         // Setup websocket on connection event
         this.wss.on('connection', async (ws, req) => {
             // Create a new connection
+            // @ts-ignore
             const conn = new WSConnection(ws, req.user);
             this.clients.add(conn);
 
             ws.on('message', async (message) => {
-                const data = parseMessage(message);
+                const data = await parseMessage(message);
 
                 if (!data) {
                     conn.error("Invalid message");
@@ -128,15 +144,15 @@ export class WSServer {
             });
 
             ws.on('close', () => {
-                this.clients.delete(ws);
+                this.clients.delete(conn);
             });
         });
     }
 
-    async handleEvent(conn, type, data) {
+    async handleEvent(conn: WSConnection, type: string, data?: object) {
         switch (type) {
             case 'ping':
-                conn.send('pong', null);
+                conn.send('pong');
                 break;
             case 'me':
                 conn.send('me', {
