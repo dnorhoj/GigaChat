@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
-import { requireSchema } from "../../lib/middleware";
-import prisma from "../../prisma";
+import { requireSchema } from "../../../lib/middleware";
+import prisma from "../../../prisma";
 import { object, string } from "yup";
 
 const checkSchema = object().shape({

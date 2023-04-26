@@ -140,7 +140,7 @@ export class WSServer {
                     }
                 }
 
-                this.handleEvent(conn, data.type, eventData);
+                this.delegateEvent(conn, data.type, eventData);
             });
 
             ws.on('close', () => {
@@ -149,7 +149,7 @@ export class WSServer {
         });
     }
 
-    async handleEvent(conn: WSConnection, type: string, data?: object) {
+    async delegateEvent(conn: WSConnection, type: string, data?: object) {
         switch (type) {
             case 'ping':
                 conn.send('pong');

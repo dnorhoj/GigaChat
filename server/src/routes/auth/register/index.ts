@@ -1,12 +1,12 @@
 import type { Request, Response } from "express";
 import { object, string } from "yup";
-import { requireSchema } from "../../lib/middleware";
-import prisma from "../../prisma";
+import { requireSchema } from "../../../lib/middleware";
+import prisma from "../../../prisma";
 import bcrypt from "bcrypt";
-import { generateToken } from "../../lib/utils";
+import { generateSessionToken } from "../../../lib/utils";
 
 const registerSchema = object().shape({
-    username: string().min(3).max(20).required(),
+    username: string().min(3).max(20).matches(/^[a-zA-Z0-9_]+$/).required(),
     password: string().min(8).max(100).required(),
     publicKey: string().required(),
     encryptedKey: string().required(),
@@ -53,7 +53,7 @@ export const post = [
                     }
                 },
                 expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days
-                token: generateToken()
+                token: generateSessionToken()
             }
         });
 

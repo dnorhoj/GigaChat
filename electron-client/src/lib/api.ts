@@ -2,18 +2,26 @@ import { get } from "svelte/store";
 import { user } from "$lib/stores";
 import { PUBLIC_API_URL } from "$env/static/public";
 
+export class APIError extends Error {
+    status: number;
+    constructor(message: string, status: number) {
+        super(message);
+        this.status = status;
+    }
+}
+
 type APIParams = {
     method?: "GET" | "POST";
     body?: any;
-    headers?: any;
+    headers?: Record<string, string>,
 }
 
 export const api = async (
     url: string,
     params: APIParams = {
-        method: "GET",
+        method: "GET"
     }
-) => {
+): Promise<any> => {
     let { method, body, headers } = params;
 
     // Set headers if not set and default headers
@@ -31,7 +39,7 @@ export const api = async (
     const userValue = get(user);
 
     if (userValue) {
-        headers["X-Token"] = userValue.token;
+        headers["X-Token"] = userValue.sessionKey;
     }
 
     const res = await fetch(url, {
@@ -47,13 +55,13 @@ export const api = async (
 
     if (!json) {
         console.error("No JSON response for API call", url);
-        throw { message: "Something went wrong!", status: res.status };
+        throw new APIError("Something went wrong!", res.status);
     }
 
     if (!json.status) {
         console.error("API error", json.message);
-        throw { message: json.message, status: res.status };
+        throw new APIError(json.message, res.status);
     }
 
-    return json.data;
+    return json.data ?? {};
 }

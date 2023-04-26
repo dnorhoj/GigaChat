@@ -23,8 +23,8 @@ export const ub64 = (data: string) => {
 export class SecurityKey {
     key: Uint8Array;
 
-    constructor(key?: Uint8Array) {
-        this.key = key ?? window.crypto.getRandomValues(new Uint8Array(32));
+    constructor(key?: string) {
+        this.key = key ? unhex(key) : window.crypto.getRandomValues(new Uint8Array(32));
     }
 
     export() {
@@ -32,7 +32,7 @@ export class SecurityKey {
     }
 
     static import(key: string) {
-        return new SecurityKey(unhex(key));
+        return new SecurityKey(key);
     }
 
     async deriveKey() {
@@ -65,6 +65,11 @@ export class SecurityKey {
     }
 }
 
+type CryptoKeyPair = {
+    publicKey: CryptoKey | null,
+    privateKey: CryptoKey | null
+}
+
 export class RSAKey {
     key: CryptoKeyPair;
 
@@ -87,8 +92,59 @@ export class RSAKey {
         return new RSAKey(key);
     }
 
+    static async importFullKey(pubkey: string, encrypedPrivateKey: string, securityKey: SecurityKey) {
+        // Import the public key
+        const publicKey = await window.crypto.subtle.importKey(
+            "spki",
+            ub64(pubkey),
+            {
+                name: "RSA-OAEP",
+                hash: "SHA-256"
+            },
+            false,
+            ["encrypt"]
+        );
+
+        // Import the private key
+        const aesKey = await securityKey.deriveKey();
+        const rawPrivateKey = await aesKey.decrypt(encrypedPrivateKey);
+        const privateKey = await window.crypto.subtle.importKey(
+            "pkcs8",
+            rawPrivateKey,
+            {
+                name: "RSA-OAEP",
+                hash: "SHA-256"
+            },
+            false,
+            ["decrypt"]
+        );
+
+        return new RSAKey({ publicKey, privateKey });
+    }
+
+    static async importPublicKey(publicKey: string) {
+        const imported = await window.crypto.subtle.importKey(
+            "spki",
+            ub64(publicKey),
+            {
+                name: "RSA-OAEP",
+                hash: "SHA-256"
+            },
+            false,
+            ["encrypt"]
+        );
+
+        return new RSAKey({
+            publicKey: imported,
+            privateKey: null
+        });
+    }
 
     async exportPub() {
+        if (this.key.publicKey === null) {
+            throw new Error("Public key is null");
+        }
+
         const exported = await window.crypto.subtle.exportKey(
             "spki",
             this.key.publicKey
@@ -98,6 +154,10 @@ export class RSAKey {
     }
 
     async exportPriv() {
+        if (this.key.privateKey === null) {
+            throw new Error("Private key is null");
+        }
+
         const exported = await window.crypto.subtle.exportKey(
             "pkcs8",
             this.key.privateKey
@@ -106,7 +166,15 @@ export class RSAKey {
         return exported;
     }
 
-    async encrypt(data: Uint8Array) {
+    async encrypt(data: Uint8Array | ArrayBuffer) {
+        if (this.key.publicKey === null) {
+            throw new Error("Public key is null");
+        }
+
+        if (data instanceof ArrayBuffer) {
+            data = new Uint8Array(data);
+        }
+
         return window.crypto.subtle.encrypt(
             {
                 name: "RSA-OAEP",
@@ -117,6 +185,10 @@ export class RSAKey {
     }
 
     async decrypt(data: Uint8Array) {
+        if (this.key.privateKey === null) {
+            throw new Error("Private key is null");
+        }
+
         return window.crypto.subtle.decrypt(
             {
                 name: "RSA-OAEP",
@@ -127,14 +199,39 @@ export class RSAKey {
     }
 }
 
-class AESKey {
+export class AESKey {
     key: CryptoKey;
 
     constructor(key: CryptoKey) {
         this.key = key;
     }
 
-    async encrypt(data: Uint8Array) {
+    static async generate() {
+        const key = await window.crypto.subtle.generateKey(
+            {
+                name: "AES-GCM",
+                length: 256,
+            },
+            true,
+            ["encrypt", "decrypt"]
+        );
+
+        return new AESKey(key);
+    }
+
+    async export() {
+        return await window.crypto.subtle.exportKey(
+            "raw",
+            this.key
+        );
+    }
+
+    async encrypt(data: Uint8Array | ArrayBuffer) {
+        // Check if data is ArrayBuffer
+        if (data instanceof ArrayBuffer) {
+            data = new Uint8Array(data);
+        }
+
         const iv = window.crypto.getRandomValues(new Uint8Array(12));
 
         const encrypted = await window.crypto.subtle.encrypt(

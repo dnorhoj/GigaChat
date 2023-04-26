@@ -27,7 +27,7 @@
             return;
         }
 
-        api("/login", {
+        api("/auth/login", {
             body: {
                 email,
                 password,
@@ -40,11 +40,12 @@
                     text: "Enter your security key to restore your messages",
                     input: "text",
                 }).then(async (keyPrompt) => {
-                    let privateKey: string;
+                    let securityKey = keyPrompt.value;
                     try {
-                        const key = SecurityKey.import(keyPrompt.value);
+                        // This will fail if the key is wrong
+                        const key = SecurityKey.import(securityKey);
                         const aesKey = await key.deriveKey();
-                        privateKey = b64(await aesKey.decrypt(
+                        b64(await aesKey.decrypt(
                             data.encryptedKey
                         ));
                     } catch (error: any) {
@@ -58,8 +59,8 @@
                     }
 
                     // Save data
-                    localStorage.setItem("privateKey", privateKey);
-                    localStorage.setItem("token", data.token);
+                    localStorage.setItem("sessionKey", data.token);
+                    localStorage.setItem("securityKey", securityKey);
 
                     goto("/app");
                 });

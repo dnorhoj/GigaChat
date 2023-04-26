@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 import { object, string } from "yup";
-import { requireSchema } from "../lib/middleware";
-import { generateToken } from "../lib/utils";
-import prisma from "../prisma";
+import { requireSchema } from "../../lib/middleware";
+import { generateSessionToken } from "../../lib/utils";
+import prisma from "../../prisma";
 import bcrypt from "bcrypt";
 
 const loginSchema = object().shape({
@@ -51,7 +51,7 @@ export const post = [
                     }
                 },
                 expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days
-                token: generateToken()
+                token: generateSessionToken()
             }
         });
 

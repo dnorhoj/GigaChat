@@ -1,7 +1,7 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import { api } from "$lib/api";
-    import { SecurityKey, RSAKey, b64 } from "$lib/crypto";
+    import { SecurityKey, RSAKey } from "$lib/crypto";
     import Swal from "sweetalert2";
     import * as yup from "yup";
 
@@ -12,7 +12,7 @@
         cPassword: string;
 
     const registerSchema = yup.object().shape({
-        username: yup.string().min(3).max(20).required("Username is required"),
+        username: yup.string().min(3).max(20).matches(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers and underscores").required(),
         password: yup.string().min(8).max(100).required(),
         name: yup.string().min(1).max(32).required(),
         email: yup.string().email().required(),
@@ -41,7 +41,7 @@
 
         // Send register start request
         try {
-            await api("/register/start", {
+            await api("/auth/register/start", {
                 body: {
                     username,
                     email,
@@ -116,13 +116,15 @@
             return;
         }
 
+        // RSA keypair
         const rsaKey = await RSAKey.generate();
-        const publicKey = await rsaKey.exportPub();
-        const privateKey = await rsaKey.exportPriv();
 
-        const encryptedPrivateKey = await aesKey.encrypt(
-            new Uint8Array(privateKey)
-        );
+        // Extract public key
+        const publicKey = await rsaKey.exportPub();
+        
+        // Extract and encrypt private key with the AES key
+        const privateKey = await rsaKey.exportPriv();
+        const encryptedPrivateKey = await aesKey.encrypt(privateKey);
 
         await Swal.fire({
             title: "Registering...",
@@ -133,7 +135,7 @@
             showConfirmButton: false,
             didOpen: () => {
                 Swal.showLoading();
-                api("/register", {
+                api("/auth/register", {
                     body: {
                         name,
                         username,
@@ -144,8 +146,8 @@
                     },
                 })
                     .then((data) => {
-                        localStorage.setItem("privatekey", b64(privateKey))
-                        localStorage.setItem("token", data.token);
+                        localStorage.setItem("securityKey", exported)
+                        localStorage.setItem("sessionKey", data.token);
                         Swal.close();
                         goto("/app");
                     })

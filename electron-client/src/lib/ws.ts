@@ -1,11 +1,14 @@
 import { PUBLIC_WS_URL } from "$env/static/public";
 import { user } from "$lib/stores";
+import { get } from "svelte/store";
+import { toast } from "./swal-mixins";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-class WebSocketClient {
+export class WebSocketConnection {
     private ws: WebSocket;
     private keepAliveInterval: number;
+    private listeners: Record<string, Set<(data?: any) => any>> = {};
 
     constructor() {
         // @ts-ignore
@@ -27,7 +30,7 @@ class WebSocketClient {
 
         this.ws.onclose = () => {
             window.clearInterval(this.keepAliveInterval);
-            this.connect();
+            return this.connect();
         }
 
         this.ws.onerror = (err) => {
@@ -35,30 +38,54 @@ class WebSocketClient {
         }
 
         this.ws.onmessage = (event) => {
-            let data;
+            let msg;
             try {
-                data = JSON.parse(event.data);
+                msg = JSON.parse(event.data);
             } catch (err) {
-                console.log("WS message error", err);
+                console.error("WS message error", err);
+                return;
             }
 
-            if (data) {
+            const { type, data } = msg;
+
+            if (this.listeners[type]) {
+                this.listeners[type].forEach((listener) => {
+                    listener(data);
+                });
             }
         }
     }
 
-    private async connect() {
+    private async connect(): Promise<any> {
         let tries = 0;
         let connected = false;
-        while (!connected) {
-            this.ws = new WebSocket(PUBLIC_WS_URL);
 
+        let userValue = get(user);
+
+        while (!userValue) {
+            console.error("WS connection failed: no user");
+            await new Promise<void>((resolve) => user.subscribe(value => {
+                userValue = value;
+                resolve();
+            }));
+        }
+
+        while (!connected) {
+            try {
+                this.ws = new WebSocket(PUBLIC_WS_URL + '/?token=' + userValue.sessionKey);
+            } catch (err) {
+                console.error("WS connection failed", err);
+                tries++;
+                await sleep(5000);
+            }
+
+            // Connect to the server (with a timeout)
             await new Promise<void>((resolve, reject) => {
                 this.ws.onopen = () => {
                     connected = true;
                     resolve();
                 }
-                
+
                 setTimeout(() => {
                     reject();
                 }, 5000);
@@ -72,20 +99,39 @@ class WebSocketClient {
             await sleep(5000);
         }
 
+        // Connected!
+        if (tries > 3) {
+            toast.fire({
+                icon: "success",
+                title: "Connection restored!"
+            });
+        }
+
         this.setup();
     }
 
-    public send(event: string, data ?: string) {
-    this.ws.send(
-        JSON.stringify({
-            type: event,
-            data,
-        })
-    );
-};
+    public send(event: string, data?: any) {
+        this.ws.send(
+            JSON.stringify({
+                type: event,
+                data,
+            })
+        );
+    };
 
     public on(event: string, callback: (data: any) => void) {
-}
-}
+        if (!this.listeners[event]) {
+            this.listeners[event] = new Set();
+        }
 
-export const ws = new WebSocketClient();
+        this.listeners[event].add(callback);
+    }
+
+    public off(event: string, callback: (data: any) => void) {
+        if (!this.listeners[event]) {
+            return false;
+        }
+
+        return this.listeners[event].delete(callback);
+    }
+}

@@ -11,54 +11,83 @@ datasource db {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  username     String     @unique @db.VarChar(20)
-  name         String     @db.VarChar(32)
-  email        String     @unique
+  id           String @id @default(dbgenerated("gen_random_uuid()"))
+  username     String @unique @db.VarChar(20)
+  name         String @db.VarChar(32)
+  email        String @unique
   password     String
   publicKey    String
   encryptedKey String
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  chatUsers    ChatUser[]
-  events       Event[]
-  sessions     Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chatUsers           ChatUser[]
+  events              Event[]
+  sessions            Session[]
+  sentChatRequest     ChatRequest[] @relation("ChatRequestSender")
+  receivedChatRequest ChatRequest[] @relation("ChatRequestRecipient")
 }
 
 model Session {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  createdAt DateTime @default(now())
-  expires   DateTime
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+  id      String   @id @default(dbgenerated("gen_random_uuid()"))
+  token   String   @unique
+  expires DateTime
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-model ChatUser {
-  id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  chat      Chat     @relation(fields: [chatId], references: [id])
-  chatId    String
 }
 
 model Chat {
-  id        String     @id @default(cuid())
-  name      String     @unique
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id        String     @id @default(dbgenerated("gen_random_uuid()"))
   chatUsers ChatUser[]
   events    Event[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ChatUser {
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String
+  chat         Chat     @relation(fields: [chatId], references: [id])
+  chatId       String
+  recipientKey String
+
+  @@unique([userId, chatId])
+}
+
+enum ChatRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ChatRequest {
+  id          String            @id @default(dbgenerated("gen_random_uuid()"))
+  sender      User              @relation("ChatRequestSender", fields: [senderId], references: [id])
+  senderId    String
+  recipient   User              @relation("ChatRequestRecipient", fields: [recipientId], references: [id])
+  recipientId String
+  status      ChatRequestStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  @@unique([senderId, recipientId])
 }
 
 model Event {
-  id        String   @id @default(cuid())
-  data      String
+  id     String  @id @default(cuid())
+  data   String
+  chat   Chat    @relation(fields: [chatId], references: [id])
+  chatId String
+  user   User    @relation(fields: [userId], references: [id])
+  userId String
+  read   Boolean @default(false)
+
   createdAt DateTime @default(now())
-  chat      Chat     @relation(fields: [chatId], references: [id])
-  chatId    String
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
 }

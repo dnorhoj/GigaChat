@@ -1,3 +1,5 @@
+import type { RSAKey } from "./crypto";
+import type { WebSocketConnection } from "./ws";
 import { writable, type Writable } from "svelte/store";
 
 type UserSession = {
@@ -5,8 +7,10 @@ type UserSession = {
     username: string;
     name: string;
     email: string;
-    token: string;
-    rsaKey: CryptoKey;
+    sessionKey: string;
+    rsaKey: RSAKey;
 }
 
 export const user: Writable<UserSession | null> = writable(null);
+
+export const ws: Writable<WebSocketConnection | null> = writable(null);

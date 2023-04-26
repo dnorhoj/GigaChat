@@ -3,6 +3,7 @@
     import MessageGroup from "$lib/components/chat/message-group.svelte";
     import MessageField from "$lib/components/chat/message-field.svelte";
     import ChatInfo from "$lib/components/chat/chat-info.svelte";
+    import ChatList from "$lib/components/chat/chat-list.svelte";
 
     const messageGroups: { messages: Message[]; isOwn: boolean }[] = [
         {
@@ -41,6 +42,12 @@
         },
     ];
 
+    const getMessages = async () => {
+        const response = await fetch("/api/chat/get-events");
+        const data = await response.json();
+        console.log(data);
+    };
+
     // Repeat the message groups to test the chat bubble
     // messageGroups.push(...messageGroups);
     // messageGroups.push(...messageGroups);
@@ -51,27 +58,12 @@
 
 <div class="flex h-screen">
     <!-- Chats -->
-    <div
-        class="w-[20vw] bg-base-200 border-r border-base-content border-opacity-20"
-    >
-        <ul class="w-full">
-            <li class="w-full">
-                <a href="#" class="w-full btn btn-ghost normal-case">
-                    <span class="text-lg">Super02</span>
-                </a>
-            </li>
-            <li class="w-full">
-                <a href="#" class="w-full btn btn-ghost normal-case">
-                    <span class="text-lg">Chat 2</span>
-                </a>
-            </li>
-        </ul>
-    </div>
+    <ChatList />
 
     <!-- Current chat -->
     <div class="h-full flex-grow flex flex-col justify-between">
         <div class="border-b border-base-content border-opacity-20">
-            <ChatInfo recipient="Super02" />
+            <ChatInfo recipient="" />
         </div>
         <div>
             <div class="max-h-full overflow-y-hidden">
