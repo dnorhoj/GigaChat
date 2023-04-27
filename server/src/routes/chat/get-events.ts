@@ -36,6 +36,9 @@ export const post = [
                         ]
                     }
                 }
+            },
+            include: {
+                chatUsers: initial ? true : false,
             }
         });
 
@@ -48,39 +51,47 @@ export const post = [
 
         if (initial) {
             // Send encrypted AES key if chat is loaded for the first time
-            const chatUser = await prisma.chatUser.findFirst({
+            const selfUser = chat.chatUsers.find((chatUser) => chatUser.userId === res.locals.user.id);
+            const otherUser = await prisma.user.findUnique({
                 where: {
-                    chatId: chat.id,
-                    userId: res.locals.user.id,
-                }
+                    username,
+                },
+                select: {
+                    id: true,
+                    username: true,
+                    name: true
+                },
             });
 
-            if (!chatUser) {
-                return res.status(400).json({
-                    status: false,
-                    message: "Chat not found",
-                });
+            response.initial = {
+                id: chat.id,
+                encryptedKey: selfUser?.recipientKey,
+                user: otherUser,
             }
-
-            response.encryptedKey = chatUser.recipientKey;
         }
 
         // Get events
         const events = await prisma.event.findMany({
             where: {
                 chatId: chat.id,
-                createdAt: (initial ? undefined : {
+                timestamp: (initial ? undefined : {
                     lt: lastEventDate,
                 })
             },
             orderBy: {
-                createdAt: "desc",
+                timestamp: "desc",
             },
             take: event_amount,
         });
 
         // Events in descending order
-        response.events = events;
+        response.events = events.reverse().map((event) => ({
+            id: event.id,
+            timestamp: event.timestamp,
+            chat: event.chatId,
+            from: event.userId,
+            content: event.content
+        }));
 
         // Send response
         res.json({

@@ -20,7 +20,7 @@ export const post = [
                 status: "PENDING"
             },
             include: {
-                recipient: true
+                sender: true
             }
         });
 
@@ -34,7 +34,7 @@ export const post = [
         res.json({
             status: true,
             data: {
-                publicKey: request.recipient.publicKey
+                publicKey: request.sender.publicKey
             }
         });
     }

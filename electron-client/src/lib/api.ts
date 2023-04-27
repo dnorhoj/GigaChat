@@ -1,5 +1,5 @@
 import { get } from "svelte/store";
-import { user } from "$lib/stores";
+import { user } from "$lib/stores/user";
 import { PUBLIC_API_URL } from "$env/static/public";
 
 export class APIError extends Error {

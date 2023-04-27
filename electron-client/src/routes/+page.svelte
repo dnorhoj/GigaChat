@@ -2,7 +2,7 @@
     import { goto } from "$app/navigation";
     import { onMount } from "svelte";
     import { APIError, api } from "$lib/api";
-    import { user } from "$lib/stores";
+    import { user } from "$lib/stores/user";
     import Loading from "$lib/components/general/loading.svelte";
     import { SecurityKey, RSAKey } from "$lib/crypto";
 

@@ -1,13 +1,17 @@
 <script lang="ts">
-    import type { Message } from "$lib/types";
+    import { chatInfo } from "$lib/stores/chat-info";
+    import { user } from "$lib/stores/user";
+    import type { Event } from "$lib/types";
 
-    export let message: Message,
+    export let message: Event,
         isOwn: boolean,
         first: boolean = false,
         last: boolean = false;
 
-    const date = new Date(message.timestamp / 1000);
-    let dateString = "";
+    const author = isOwn ? $chatInfo?.user.name : $user?.name
+    const date = new Date(message.timestamp);
+
+    let dateString: string = "";
 
     if (first) {
         if (date.toDateString() === new Date().toDateString()) {
@@ -31,7 +35,7 @@
 >
     {#if first}
         <div class="chat-header">
-            {message.author}
+            {author}
             <time
                 class="text-xs opacity-50 select-none"
                 title={date.toLocaleString()}
@@ -48,7 +52,7 @@
         class:end={isOwn}
         class:chat-bubble-primary={isOwn}
     >
-        {message.content}
+        {message.content.data}
     </div>
 </div>
 

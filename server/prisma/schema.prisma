@@ -81,13 +81,13 @@ model ChatRequest {
 }
 
 model Event {
-  id     String  @id @default(cuid())
-  data   String
-  chat   Chat    @relation(fields: [chatId], references: [id])
-  chatId String
-  user   User    @relation(fields: [userId], references: [id])
-  userId String
-  read   Boolean @default(false)
+  id      String  @id @default(cuid())
+  content String
+  chat    Chat    @relation(fields: [chatId], references: [id])
+  chatId  String
+  user    User    @relation(fields: [userId], references: [id])
+  userId  String
+  read    Boolean @default(false)
 
-  createdAt DateTime @default(now())
+  timestamp DateTime @default(now())
 }

@@ -13,6 +13,13 @@ export const post = [
     async (req: Request, res: Response) => {
         const { username } = res.locals.body;
 
+        if (username === res.locals.user.username) {
+            return res.status(400).json({
+                status: false,
+                message: "You cannot send a chat request to yourself"
+            });
+        }
+
         const requestedUser = await prisma.user.findUnique({
             where: {
                 username
@@ -29,7 +36,7 @@ export const post = [
         const existingChat = await prisma.chat.findFirst({
             where: {
                 chatUsers: {
-                    some: {
+                    every: {
                         userId: {
                             in: [res.locals.user.id, requestedUser.id]
                         }

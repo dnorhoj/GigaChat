@@ -4,7 +4,7 @@
     import { api } from "$lib/api";
     import { toast } from "$lib/swal-mixins";
     import { AESKey, RSAKey, b64 } from "$lib/crypto";
-    import { user } from "$lib/stores";
+    import { user } from "$lib/stores/user";
     import { goto } from "$app/navigation";
 
     export let chatRequest: any;

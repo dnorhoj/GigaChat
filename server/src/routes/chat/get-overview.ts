@@ -35,10 +35,10 @@ export const get = [
                 },
                 events: {
                     orderBy: {
-                        createdAt: "desc"
+                        timestamp: "desc"
                     },
                     take: 1,
-                    select: { createdAt: true }
+                    select: { timestamp: true }
                 }
             },
         });
@@ -61,8 +61,8 @@ export const get = [
         });
 
         const chats = chatsNoUnread.sort((a, b) => {
-            const aDate = a.events[0]?.createdAt || a.createdAt;
-            const bDate = b.events[0]?.createdAt || b.createdAt;
+            const aDate = a.events[0]?.timestamp || a.createdAt;
+            const bDate = b.events[0]?.timestamp || b.createdAt;
             return bDate.getTime() - aDate.getTime();
         }).map(chat => {
             const unread = unreadMessages.find(event => event.chatId === chat.id);

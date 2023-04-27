@@ -4,7 +4,7 @@
     import { onMount } from "svelte";
     import { faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
     import Fa from "svelte-fa";
-    import { user } from "$lib/stores";
+    import { user } from "$lib/stores/user";
 
     import Loading from "$lib/components/general/loading.svelte";
     import ChatOverview from "$lib/components/overview/chat-overview.svelte";

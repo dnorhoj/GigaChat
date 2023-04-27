@@ -1,5 +1,5 @@
-import type { RSAKey } from "./crypto";
-import type { WebSocketConnection } from "./ws";
+import type { RSAKey } from "../crypto";
+import type { WebSocketConnection } from "../ws";
 import { writable, type Writable } from "svelte/store";
 
 type UserSession = {

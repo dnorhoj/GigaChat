@@ -184,9 +184,13 @@ export class RSAKey {
         );
     }
 
-    async decrypt(data: Uint8Array) {
+    async decrypt(data: Uint8Array | ArrayBuffer) {
         if (this.key.privateKey === null) {
             throw new Error("Private key is null");
+        }
+
+        if (data instanceof ArrayBuffer) {
+            data = new Uint8Array(data);
         }
 
         return window.crypto.subtle.decrypt(
@@ -219,6 +223,24 @@ export class AESKey {
         return new AESKey(key);
     }
 
+    static async import(key: Uint8Array | ArrayBuffer) {
+        if (key instanceof ArrayBuffer) {
+            key = new Uint8Array(key);
+        }
+
+        const imported = await window.crypto.subtle.importKey(
+            "raw",
+            key,
+            {
+                name: "AES-GCM",
+            },
+            false,
+            ["encrypt", "decrypt"]
+        );
+
+        return new AESKey(imported);
+    }
+
     async export() {
         return await window.crypto.subtle.exportKey(
             "raw",
@@ -246,6 +268,10 @@ export class AESKey {
         return b64(new Uint8Array([...iv, ...new Uint8Array(encrypted)]));
     }
 
+    async encryptText(data: string) {
+        return await this.encrypt(new TextEncoder().encode(data));
+    }
+
     async decrypt(data: string) {
         const msg = ub64(data);
 
@@ -260,5 +286,10 @@ export class AESKey {
             this.key,
             encrypted
         );
+    }
+
+    async decryptText(data: string) {
+        const decrypted = await this.decrypt(data);
+        return new TextDecoder().decode(decrypted);
     }
 }

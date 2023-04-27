@@ -3,12 +3,12 @@ import type { User } from '@prisma/client';
 import type { WebSocket, RawData } from 'ws';
 import { WebSocketServer } from 'ws';
 import prisma from '../prisma';
-import wsEvents from '../lib/ws-events';
+import { WSEvent, wsEventSchemas } from './ws-events';
 import { object, string } from 'yup';
 
 const messageSchema = object().shape({
-    type: string().oneOf(Object.keys(wsEvents)).required(),
-    data: object().required()
+    type: string().oneOf(Object.keys(wsEventSchemas)).required(),
+    data: object()
 });
 
 const parseMessage = async (message: RawData) => {
@@ -46,12 +46,14 @@ const auth = async (token: string) => {
 }
 
 // WebSocket connection class that stores connection data
-class WSConnection {
+export class WSConnection {
     ws: WebSocket;
+    wss: WSServer;
     user: User;
 
-    constructor(ws: WebSocket, user: User) {
+    constructor(ws: WebSocket, wss: WSServer, user: User) {
         this.ws = ws;
+        this.wss = wss;
         this.user = user;
     }
 
@@ -111,7 +113,7 @@ export class WSServer {
         this.wss.on('connection', async (ws, req) => {
             // Create a new connection
             // @ts-ignore
-            const conn = new WSConnection(ws, req.user);
+            const conn = new WSConnection(ws, this, req.user);
             this.clients.add(conn);
 
             ws.on('message', async (message) => {
@@ -122,16 +124,15 @@ export class WSServer {
                     return;
                 }
 
-                if (!Object.keys(wsEvents).includes(data.type)) {
+                if (!Object.keys(wsEventSchemas).includes(data.type)) {
                     conn.error("Invalid message");
                     return;
                 }
 
-                const schema = wsEvents[data.type];
+                const [type, schema] = wsEventSchemas[data.type];
 
-                let eventData;
-
-                if (schema !== null) {
+                let eventData: any;
+                if (schema) {
                     try {
                         eventData = await schema.validate(data.data);
                     } catch (err) {
@@ -140,7 +141,7 @@ export class WSServer {
                     }
                 }
 
-                this.delegateEvent(conn, data.type, eventData);
+                this.delegateEvent(conn, type, eventData);
             });
 
             ws.on('close', () => {
@@ -149,17 +150,13 @@ export class WSServer {
         });
     }
 
-    async delegateEvent(conn: WSConnection, type: string, data?: object) {
+    async delegateEvent(conn: WSConnection, type: WSEvent, data: any) {
         switch (type) {
-            case 'ping':
-                conn.send('pong');
+            case WSEvent.KEEPALIVE:
+                conn.send("keep-alive")
                 break;
-            case 'me':
-                conn.send('me', {
-                    username: conn.user.username,
-                    name: conn.user.name,
-                    email: conn.user.email
-                });
+            case WSEvent.EVENT:
+                require('./events/event').handle(conn, data);
                 break;
             default:
                 conn.error("Invalid message");
