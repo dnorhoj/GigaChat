@@ -1,10 +1,10 @@
 <script lang="ts">
     import { api } from "$lib/api";
     import { toast } from "$lib/swal-mixins";
-    import { onMount } from "svelte";
+    import { onDestroy, onMount } from "svelte";
     import { faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
     import Fa from "svelte-fa";
-    import { user } from "$lib/stores/user";
+    import { user, ws } from "$lib/stores/user";
 
     import Loading from "$lib/components/general/loading.svelte";
     import ChatOverview from "$lib/components/overview/chat-overview.svelte";
@@ -30,8 +30,17 @@
         chatRequests = data.chatRequests;
     };
 
+    const handleReload = () => {
+        getChats();
+    }
+
     onMount(() => {
         getChats();
+        $ws!.on('overview-reload', handleReload);
+    });
+
+    onDestroy(() => {
+        $ws!.off('overview-reload', handleReload);
     });
 </script>
 

@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { requireAuth, requireSchema } from "../../lib/middleware";
 import { object, string } from "yup";
 import prisma from "../../prisma";
+import { wsServer } from "../../server";
 
 const sendChatRequestSchema = object().shape({
     username: string().required()
@@ -80,6 +81,8 @@ export const post = [
                 recipientId: requestedUser.id
             }
         });
+
+        wsServer.sendToUser(requestedUser.id, "overview-reload");
 
         res.json({
             status: true

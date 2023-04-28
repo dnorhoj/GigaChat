@@ -7,8 +7,8 @@ import cors from 'cors';
 const app = express();
 const server = http.createServer(app);
 
-// Attach the WebSocket server to the HTTP server
-new WSServer(server);
+// Set up ws server
+export const wsServer = new WSServer(server);
 
 // Setup JSON body parsing
 app.use(express.json());

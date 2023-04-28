@@ -2,6 +2,7 @@ import { object, string } from "yup";
 import { requireAuth, requireSchema } from "../../../../lib/middleware";
 import { Request, Response } from "express";
 import prisma from "../../../../prisma";
+import { wsServer } from "../../../../server";
 
 const finishRequestApproval = object().shape({
     requestId: string().required(),
@@ -84,6 +85,9 @@ export const post = [
                 status: "APPROVED",
             }
         });
+
+        // Send update in ws
+        wsServer.sendToUser(request.senderId, "overview-reload");
 
         return res.status(200).json({
             status: true,

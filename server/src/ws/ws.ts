@@ -163,4 +163,12 @@ export class WSServer {
                 break;
         }
     }
+
+    async sendToUser(userId: string, type: string, data?: object) {
+        for (const conn of this.clients) {
+            if (conn.user.id === userId) {
+                conn.send(type, data);
+            }
+        }
+    }
 }
