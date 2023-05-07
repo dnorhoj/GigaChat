@@ -27,6 +27,7 @@ export const get = [
                     select: {
                         user: {
                             select: {
+                                id: true,
                                 username: true,
                                 name: true
                             }

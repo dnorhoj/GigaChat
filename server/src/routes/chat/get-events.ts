@@ -93,6 +93,20 @@ export const post = [
             content: event.content
         }));
 
+        // Mark as read
+        await prisma.event.updateMany({
+            where: {
+                chatId: chat.id,
+                userId: {
+                    not: res.locals.user.id,
+                },
+                read: false,
+            },
+            data: {
+                read: true,
+            }
+        });
+
         // Send response
         res.json({
             status: true,

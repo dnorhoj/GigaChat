@@ -1,16 +1,25 @@
 <script lang="ts">
     import { chatInfo } from "$lib/stores/chat-info";
     import { ws } from "$lib/stores/user";
+    import { toast } from "$lib/swal-mixins";
 
     let message: string = "";
 
     const sendMessage = async () => {
         if (!$ws || !$chatInfo) return;
+        if (!message.trim()) return;
+        if (message.trim().length > 1000) {
+            toast.fire({
+                icon: "error",
+                title: "Message too long",
+            });
+            return;
+        }
 
         // Encrypt message with AES key
         const content = await $chatInfo.key.encryptText(JSON.stringify({
             type: "message",
-            data: message,
+            data: message.trim(),
         }));
 
         $ws.send("event", {

@@ -32,15 +32,29 @@
 
     const handleReload = () => {
         getChats();
-    }
+    };
+
+    const handleEvent = (data: any) => {
+        if (data.from === $user?.id) return;
+
+        for (const chat of chats) {
+            if (chat.chatUsers[0].user.id === data.from) {
+                chat.unread++;
+                chats = [chat, ...chats.filter((c: any) => c !== chat)];
+                break;
+            }
+        }
+    };
 
     onMount(() => {
         getChats();
-        $ws!.on('overview-reload', handleReload);
+        $ws!.on("overview-reload", handleReload);
+        $ws!.on("event", handleEvent);
     });
 
     onDestroy(() => {
-        $ws!.off('overview-reload', handleReload);
+        $ws!.off("overview-reload", handleReload);
+        $ws!.off("event", handleEvent);
     });
 </script>
 
@@ -66,7 +80,9 @@
     {:else}
         <!-- Pending chats -->
         {#if chatRequests.length > 0}
-            <div class="collapse collapse-plus border border-base-300 bg-base-100 rounded-box mt-5">
+            <div
+                class="collapse collapse-plus border border-base-300 bg-base-100 rounded-box mt-5"
+            >
                 <input type="checkbox" class="peer" />
                 <div class="font-bold collapse-title">
                     Pending chats ({chatRequests.length})

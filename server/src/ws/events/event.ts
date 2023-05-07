@@ -42,8 +42,11 @@ export const handle = async (conn: WSConnection, data: { chat: string, content: 
 
     // Broadcast message to all clients
     const userIds = chat.chatUsers.map((chatUser) => chatUser.userId);
+    let foundClient = false;
     for (const client of conn.wss.clients) {
         if (userIds.includes(client.user.id)) {
+            foundClient = true;
+
             client.send("event", {
                 id,
                 timestamp: Date.now(),
@@ -52,5 +55,20 @@ export const handle = async (conn: WSConnection, data: { chat: string, content: 
                 content: data.content,
             });
         }
+    }
+
+    if (foundClient) {
+        await prisma.event.updateMany({
+            where: {
+                chatId: chat.id,
+                userId: {
+                    not: conn.user.id,
+                },
+                read: false,
+            },
+            data: {
+                read: true,
+            }
+        });
     }
 }

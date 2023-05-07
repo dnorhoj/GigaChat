@@ -1,7 +1,6 @@
 <script lang="ts">
     import { page } from "$app/stores";
     import { api } from "$lib/api";
-    import { user } from "$lib/stores/user";
     import { toast } from "$lib/swal-mixins";
     import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
     import { onMount } from "svelte";
@@ -10,8 +9,6 @@
 
     let chats: any = [],
         loading = true;
-
-    const handleNotification = () => {};
 
     const getChats = async () => {
         let data;
@@ -63,6 +60,7 @@
                     class="w-full"
                     class:bg-base-content={chat.active}
                     class:bg-opacity-20={chat.active}
+                    data-sveltekit-reload
                 >
                     <span class="text-lg">{chat.chatUsers[0].user.name}</span>
                 </a>

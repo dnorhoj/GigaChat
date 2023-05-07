@@ -8,7 +8,7 @@
         first: boolean = false,
         last: boolean = false;
 
-    const author = isOwn ? $chatInfo?.user.name : $user?.name
+    const author = isOwn ? $user?.name : $chatInfo?.user.name
     const date = new Date(message.timestamp);
 
     let dateString: string = "";
