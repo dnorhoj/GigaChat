@@ -7,17 +7,17 @@
     let chatWindowEl;
 </script>
 
-<div class="flex h-screen">
+<div class="flex h-screen w-screen">
     <!-- Chats -->
     <ChatList />
 
     <!-- Current chat -->
-    <div class="h-full flex-grow flex flex-col">
+    <div class="h-full flex-grow flex flex-col w-screen">
         <div class="border-b border-base-content border-opacity-20 h-15">
             <ChatInfo />
         </div>
         <div class="flex flex-col justify-end flex-grow overflow-y-scroll">
-            <div class="max-h-full overflow-y-scroll pb-5" bind:this={chatWindowEl}>
+            <div class="max-h-full overflow-y-scroll overflow-x-hidden pb-5" bind:this={chatWindowEl}>
                 <ChatWindow {chatWindowEl} />
             </div>
         </div>

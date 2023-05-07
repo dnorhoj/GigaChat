@@ -41,7 +41,7 @@
     });
 </script>
 
-<div class="w-[20vw] border-r border-base-content border-opacity-20">
+<div class="w-[20vw] border-r border-base-content border-opacity-20 hidden md:block">
     <div
         class="bg-base-200 border-b border-b-base-content border-opacity-20 flex items-center"
     >

@@ -45,7 +45,7 @@
         </div>
     {/if}
     <div
-        class="chat-bubble"
+        class="chat-bubble break-all"
         class:last
         class:first
         class:start={!isOwn}

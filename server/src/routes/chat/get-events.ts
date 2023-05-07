@@ -5,7 +5,7 @@ import { bool, date, object, string } from "yup";
 import prisma from "../../prisma";
 
 // How many events to return per request
-const event_amount = 20;
+const event_amount = 75;
 
 const getEventsSchema = object().shape({
     username: string().required(),

@@ -62,11 +62,15 @@
     <title>Chats | GigaChat</title>
 </svelte:head>
 
-<div class="container mx-auto mt-10">
-    <div class="flex justify-between items-center">
+<div class="container mx-auto mt-2 md:mt-10">
+    <div
+        class="flex flex-col md:flex-row justify-between items-center w-full gap-2 md:gap-0"
+    >
         <h2 class="text-2xl font-bold">Welcome, {$user?.name}!</h2>
-        <div class="flex items-center gap-2">
-            <label class="btn btn-primary" for="add-chat">Start new chat</label>
+        <div class="flex items-center gap-2 w-full md:w-fit px-2 md:mx-0">
+            <label class="btn btn-primary flex-grow" for="add-chat"
+                >Start new chat</label
+            >
             <button class="btn btn-error btn-outline">
                 <Fa icon={faRightFromBracket} />
             </button>
@@ -103,7 +107,9 @@
         {/if}
 
         {#each chats as chat}
-            <ChatOverview {chat} />
+            <div class="mx-2">
+                <ChatOverview {chat} />
+            </div>
         {/each}
     {/if}
 </div>
