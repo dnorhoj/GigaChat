@@ -30,6 +30,12 @@
         chatRequests = data.chatRequests;
     };
 
+    const logOut = async () => {
+        window.localStorage.clear();
+        // @ts-ignore
+        window.location = "/login";
+    };
+
     const handleReload = () => {
         getChats();
     };
@@ -64,14 +70,14 @@
 
 <div class="container mx-auto mt-2 md:mt-10">
     <div
-        class="flex flex-col md:flex-row justify-between items-center w-full gap-2 md:gap-0"
+        class="flex flex-col md:flex-row justify-between items-center w-full gap-2 md:gap-0 px-0 md:px-2 pb-6"
     >
         <h2 class="text-2xl font-bold">Welcome, {$user?.name}!</h2>
         <div class="flex items-center gap-2 w-full md:w-fit px-2 md:mx-0">
             <label class="btn btn-primary flex-grow" for="add-chat"
                 >Start new chat</label
             >
-            <button class="btn btn-error btn-outline">
+            <button class="btn btn-error btn-outline" on:click={logOut}>
                 <Fa icon={faRightFromBracket} />
             </button>
         </div>

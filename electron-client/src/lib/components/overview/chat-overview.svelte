@@ -2,8 +2,7 @@
     export let chat: any;
 </script>
 
-<ul class="bg-base-100 rounded-box container mx-auto">
-    <div class="indicator" />
+<ul class="bg-base-100 rounded-box container mx-auto mb-2">
     <a
         href="/app/chat/{chat.chatUsers[0].user.username}"
         class="flex justify-between items-center rounded-lg bg-base-200"
